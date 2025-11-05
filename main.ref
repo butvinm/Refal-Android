@@ -2,8 +2,27 @@
 $EXTERN ArgList;
 
 *$FROM refalrawdraw
-$EXTERN DebugLoop;
+$EXTERN CNFGSetupFullscreen, CNFGClearFrame, CNFGGetDimensions, CNFGSwapBuffers, CNFGSetBGColor, CNFGDrawText;
+
+* $EXTERN DebugLoop;
 
 $ENTRY GO {
-  = <Prout <ArgList>> <DebugLoop>
+  =
+    <Prout 'Hello from main.ref'>
+    <Prout <ArgList>>
+    <CNFGSetupFullscreen ('Test Title') 0>
+    <Loop>
+}
+
+
+Loop {
+  , <CNFGGetDimensions>
+  : {
+    s.W s.H =
+      <CNFGSetBGColor '#181818ff'>
+      <CNFGClearFrame>
+      <CNFGDrawText ('Hello!') 16>
+      <CNFGSwapBuffers>
+      <Loop>
+  }
 }

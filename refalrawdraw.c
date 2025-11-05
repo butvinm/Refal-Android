@@ -2,31 +2,18 @@
 #include <stddef.h>
 #include <stdio.h>
 
-// Make it so we don't need to include any other C files in our build.
 #define CNFG_IMPLEMENTATION
-
-// Optional: Use OpenGL to do rendering on appropriate systems.
 #define CNFGOGL
 
 #include "CNFG.h"
 #include "refal05rts.h"
 
-#define KEYCODE_DEL 67
-
-void AndroidDisplayKeyboard(int pShow);
-
-void HandleMotion(int x, int y, int mask) { }
-
-static char text[1024];
-static char* text_ptr = text;
+volatile int suspended;
 
 int HandleDestroy() {
     printf("Destroying\n");
     return 0;
 }
-
-volatile int suspended;
-volatile int keyboard_up = 0;
 
 void HandleSuspend() {
     suspended = 1;
@@ -38,30 +25,14 @@ void HandleResume() {
 
 void HandleKey(int keycode, int bDown) {
     printf("Key: keycode=%d bDown=%d\n", keycode, bDown);
-
-    if (bDown) {
-        if (keycode == KEYCODE_DEL) {
-            if (text_ptr != text) {
-                text_ptr--;
-                *text_ptr = '\0';
-            }
-        } else {
-            *text_ptr = (char)keycode;
-            text_ptr++;
-            *text_ptr = '\0';
-        }
-    }
 }
 
 void HandleButton(int x, int y, int button, int bDown) {
     printf("Button: (x=%d, y=%d) button=%d bDown=%d \n", x, y, button, bDown);
+}
 
-    if (button == 0) { // single touch
-        if (!bDown) { // released
-            keyboard_up = !keyboard_up;
-            AndroidDisplayKeyboard(keyboard_up);
-        }
-    }
+void HandleMotion(int x, int y, int mask) {
+    printf("Motion: (x=%d, y=%d) mask=%d \n", x, y, mask);
 }
 
 struct signed_number {
@@ -101,15 +72,17 @@ static struct r05_node* parse_signed_number(
 }
 
 static size_t parse_chars_in_brackets(
-    struct r05_node** chars, char buffer[], size_t buflen,
+    struct r05_node** brackets, char buffer[], size_t buflen,
     struct r05_node* open_bracket
 ) {
     if (open_bracket->tag != R05_DATATAG_OPEN_BRACKET) {
         r05_recognition_impossible();
     }
 
+    brackets[0] = open_bracket;
+
     size_t nread = 0;
-    struct r05_node* cur = chars[0] = open_bracket->next;
+    struct r05_node* cur = open_bracket->next;
     while (nread < buflen && R05_DATATAG_CHAR == cur->tag) {
         buffer[nread] = cur->info.char_;
         ++nread;
@@ -119,75 +92,181 @@ static size_t parse_chars_in_brackets(
         r05_recognition_impossible();
     }
 
-    chars[1] = cur->prev;
+    brackets[1] = cur;
     return nread;
 }
 
-#define MAX_TITLE_LEN 1024
-
-// R05_DEFINE_ENTRY_FUNCTION(CNFGSetupFullscreen, "CNFGSetupFullscreen") {
-//     // struct r05_node *eTitle[2];
-//     // char title[MAX_TITLE_LEN];
-//     // size_t title_len = parse_chars_in_brackets(eTitle, title, MAX_TITLE_LEN, arg_begin->next);
-//     CNFGSetupFullscreen("Refal", 0);
-
-//     r05_splice_to_freelist(arg_begin, arg_end);
-// }
-
-R05_DEFINE_ENTRY_FUNCTION(DebugLoop, "DebugLoop") {
-    printf("Application Started 69!\n");
-    
-    CNFGSetupFullscreen("Refal", 0);
-
-    while (CNFGHandleInput()) {
-        if (suspended) {
-            usleep(50000);
-            continue;
-        }
-
-        CNFGBGColor = 0x000080ff; // Dark Blue Background
-
-        short w, h;
-        CNFGClearFrame();
-        CNFGGetDimensions(&w, &h); // required to initialize screen for rendering
-
-        // render user input text
-        {
-            CNFGColor(0xffffffff);
-            CNFGPenX = 16;
-            CNFGPenY = 16;
-            CNFGDrawText(text, 16);
-        }
-
-        CNFGSwapBuffers();
+static int parse_hex_color(const char* color, int color_len) {
+    if (!color || color_len != 9) {
+        printf("# bad color length %d\n", color_len);
+        r05_recognition_impossible();
     }
+
+    if (color[0] != '#') {
+        printf("# missed\n");
+        r05_recognition_impossible();
+    }
+
+    int result = 0;
+
+    for (int i = 1; i < 9; i++) {
+        char c = color[i];
+        int digit;
+
+        if (c >= '0' && c <= '9') {
+            digit = c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            digit = 10 + (c - 'a');
+        } else if (c >= 'A' && c <= 'F') {
+            digit = 10 + (c - 'A');
+        } else {
+            return -1;
+        }
+
+        result = (result << 4) | digit;
+    }
+
+    return result;
+}
+
+/**
+ * <CNFGSetupFullscreen (e.WindowName) s.ScreenNumber> == empty
+ *
+ * e.WindowName = s.CHAR+
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGSetupFullscreen, "CNFGSetupFullscreen") {
+    printf("CNFGSetupFullscreen called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct r05_node* tWindowName[2];
+    char window_name[1024];
+    int window_name_len = parse_chars_in_brackets(tWindowName, window_name, sizeof(window_name) - 1, callee->next);
+    window_name[window_name_len] = '\0';
+
+    struct signed_number screen_number;
+    struct r05_node* sScreenNumber = parse_signed_number(&screen_number, tWindowName[1]->next)->prev;
+    if (screen_number.sign == -1) {
+        r05_recognition_impossible();
+    }
+    if (!r05_empty_hole(sScreenNumber, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    CNFGSetupFullscreen(window_name, (int)screen_number.value);
 
     r05_splice_to_freelist(arg_begin, arg_end);
 }
 
-// int main(int argc, char** argv) {
-//     CNFGSetupFullscreen("Refal", 0);
+/**
+ * <CNFGClearFrame> == empty
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGClearFrame, "CNFGClearFrame") {
+    printf("CNFGClearFrame called from Refal\n");
 
-//     while (CNFGHandleInput()) {
-//         if (suspended) {
-//             usleep(50000);
-//             continue;
-//         }
+    struct r05_node* callee = arg_begin->next;
+    if (!r05_empty_hole(callee, arg_end)) {
+        r05_recognition_impossible();
+    }
 
-//         CNFGBGColor = 0x000080ff; // Dark Blue Background
+    CNFGClearFrame();
 
-//         short w, h;
-//         CNFGClearFrame();
-//         CNFGGetDimensions(&w, &h); // required to initialize screen for rendering
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
 
-//         // render user input text
-//         {
-//             CNFGColor(0xffffffff);
-//             CNFGPenX = 16;
-//             CNFGPenY = 16;
-//             CNFGDrawText(text, 16);
-//         }
+/**
+ * <CNFGGetDimensions> == s.W s.H
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGGetDimensions, "CNFGGetDimensions") {
+    printf("CNFGGetDimensions called from Refal\n");
 
-//         CNFGSwapBuffers();
-//     }
-// }
+    struct r05_node* callee = arg_begin->next;
+    if (!r05_empty_hole(callee, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    struct r05_node* sW = arg_begin;
+    struct r05_node* sH = arg_begin->next;
+
+    short w, h;
+    CNFGGetDimensions(&w, &h);
+
+    sW->tag = R05_DATATAG_NUMBER;
+    sW->info.number = (r05_number)w;
+    sH->tag = R05_DATATAG_NUMBER;
+    sH->info.number = (r05_number)h;
+    r05_splice_to_freelist(sH->next, arg_end);
+}
+
+/**
+ * <CNFGSwapBuffers> == empty
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGSwapBuffers, "CNFGSwapBuffers") {
+    printf("CNFGSwapBuffers called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+    if (!r05_empty_hole(callee, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    CNFGSwapBuffers();
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * Set CNFGBGColor color value.
+ *
+ * <CNFGSetBGColor e.Color> == empty
+ *
+ * e.Color = #RRGGBBAA
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGSetBGColor, "CNFGSetBGColor") {
+    printf("CNFGSetBGColor called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct r05_node* eColor[2];
+    char color[9];
+    int color_len = r05_read_chars(eColor, color, sizeof(color), callee, arg_end);
+    printf("color=%.*s\n", color_len, color);
+
+    if (!r05_empty_hole(eColor[1], arg_end)) {
+        printf("extra args\n");
+        r05_recognition_impossible();
+    }
+
+    CNFGBGColor = parse_hex_color(color, color_len);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * <CNFGDrawText (e.Text) s.Scale> == empty
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGDrawText, "CNFGDrawText") {
+    printf("CNFGDrawText called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct r05_node* tText[2];
+    char text[1024];
+    int text_len = parse_chars_in_brackets(tText, text, sizeof(text) - 1, callee->next);
+    text[text_len] = '\0';
+
+    struct signed_number scale;
+    struct r05_node* sScale = parse_signed_number(&scale, tText[1]->next)->prev;
+    if (scale.sign == -1) {
+        r05_recognition_impossible();
+    }
+    if (!r05_empty_hole(sScale, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    CNFGColor(0xffffffff);
+    CNFGPenX = 16;
+    CNFGPenY = 16;
+    CNFGDrawText(text, (short)scale.value);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
