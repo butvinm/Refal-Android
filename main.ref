@@ -1,0 +1,9 @@
+*$FROM LibraryEx
+$EXTERN ArgList;
+
+*$FROM refalrawdraw
+$EXTERN DebugLoop;
+
+$ENTRY GO {
+  = <Prout <ArgList>> <DebugLoop>
+}
