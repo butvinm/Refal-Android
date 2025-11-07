@@ -2,6 +2,8 @@
 
 This project demonstrates how an Android application can be built using the [Refal](https://en.wikipedia.org/wiki/Refal) programming language.
 
+<img src="./assets/demo.gif" style="max-height: 300px;">
+
 ## Project Structure
 
 - `./rawdrawandroid`: Project that allows building Android applications in C
