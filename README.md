@@ -40,7 +40,7 @@ make keystore
 **Build and upload the application to a connected device:**
 
 ```shell
-make push-run-from-refal
+make push run
 ```
 
 **Inspect application logs:**
