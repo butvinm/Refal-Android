@@ -2,7 +2,15 @@
 $EXTERN Apply;
 
 *$FROM refalrawdraw
-$EXTERN CNFGSetupFullscreen, CNFGClearFrame, CNFGGetDimensions, CNFGSwapBuffers, CNFGSetBGColor, CNFGDrawText;
+$EXTERN
+  CNFGSetupFullscreen,
+  CNFGClearFrame,
+  CNFGGetDimensions,
+  CNFGSwapBuffers,
+  CNFGDrawText,
+  CNFGColor,
+  CNFGSetPenX,
+  CNFGSetPenY;
 
 
 $ENTRY RunApplication {
@@ -29,8 +37,8 @@ MainLoop {
 
         e.Msgs
           , <UpdateForEachMsg t.Update t.Model e.Msgs> : t.NewModel
-          , <Apply t.View t.Model> : t.DOM
-          = <Render t.DOM>
+          , <Apply t.View t.Model> : e.DOM
+          = <Render e.DOM>
             <MainLoop t.NewModel t.Update t.View>;
       }
 }
@@ -49,14 +57,24 @@ UpdateForEachMsg {
 }
 
 Render  {
-  t.Model
-    , <Prout 'Render: ' t.Model> :
-    , <CNFGGetDimensions>
-    : {
-        s.W s.H =
-          <CNFGSetBGColor '#181818ff'>
-          <CNFGClearFrame>
-          <CNFGDrawText ('Hello from Refal!') 16>
-          <CNFGSwapBuffers>
-      }
+  e.DOM
+    , <Prout 'Render: ' e.DOM> :
+    , <CNFGGetDimensions> : s.W s.H
+    = <CNFGClearFrame>
+      <Render-Elements e.DOM>
+      <CNFGSwapBuffers>
+}
+
+Render-Elements {
+  /* empty */ = /* empty */;
+
+  t.Element e.Elements = <Render-Element t.Element> <Render-Elements e.Elements>;
+}
+
+Render-Element {
+  (Text (e.Color) (s.X s.Y) s.Scale e.Text)
+    = <CNFGColor e.Color>
+      <CNFGSetPenX s.X>
+      <CNFGSetPenY s.Y>
+      <CNFGDrawText (e.Text) s.Scale>;
 }

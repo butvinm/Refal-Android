@@ -18,5 +18,6 @@ $ENTRY Update {
 
 
 $ENTRY View {
-  t.Model = ()
+  t.Model 
+    = (Text ('#ffffffff') (20 20) 16 'Hello from Refal!')
 }
