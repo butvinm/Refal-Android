@@ -7,6 +7,7 @@ This project demonstrates how an Android application can be built using the [Ref
 - `./rawdrawandroid`: Project that allows building Android applications in C
 - `./Refal-05-Standalone`: Standalone distribution of the Refal-05 compiler
 - `./refalrawdraw.c`: Refal bindings for the `rawdrawandroid` API
+- `./mvu.ref`: Model-Update-View framework (Elm Architecture)
 - `./main.ref`: Main application logic written in Refal
 
 ## Prerequisites
