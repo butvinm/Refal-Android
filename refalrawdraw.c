@@ -242,6 +242,70 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetBGColor, "CNFGSetBGColor") {
 }
 
 /**
+ * <CNFGColor e.Color> == empty
+ *
+ * e.Color = #RRGGBBAA
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGColor, "CNFGColor") {
+    printf("CNFGColor called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct r05_node* eColor[2];
+    char color[9];
+    int color_len = r05_read_chars(eColor, color, sizeof(color), callee, arg_end);
+    printf("color=%.*s\n", color_len, color);
+
+    if (!r05_empty_hole(eColor[1], arg_end)) {
+        printf("extra args\n");
+        r05_recognition_impossible();
+    }
+
+    int color_value = parse_hex_color(color, color_len);
+    CNFGColor(color_value);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * <CNFGSetPenX s.X> == empty
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGSetPenX, "CNFGSetPenX") {
+    printf("CNFGSetPenX called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct signed_number x;
+    struct r05_node* sX = parse_signed_number(&x, callee->next)->prev;
+    if (!r05_empty_hole(sX, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    CNFGPenX = (short)(x.sign * x.value);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * <CNFGSetPenY s.Y> == empty
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGSetPenY, "CNFGSetPenY") {
+    printf("CNFGSetPenY called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct signed_number y;
+    struct r05_node* sY = parse_signed_number(&y, callee->next)->prev;
+    if (!r05_empty_hole(sY, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    CNFGPenY = (short)(y.sign * y.value);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
  * <CNFGDrawText (e.Text) s.Scale> == empty
  */
 R05_DEFINE_ENTRY_FUNCTION(CNFGDrawText, "CNFGDrawText") {
@@ -263,9 +327,6 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGDrawText, "CNFGDrawText") {
         r05_recognition_impossible();
     }
 
-    CNFGColor(0xffffffff);
-    CNFGPenX = 16;
-    CNFGPenY = 16;
     CNFGDrawText(text, (short)scale.value);
 
     r05_splice_to_freelist(arg_begin, arg_end);
