@@ -146,7 +146,7 @@ $ENTRY ButtonEventListener {
         1 = t.OnReleaseMsg;
       };
 
-  ((s.X1 s.Y1) (s.W s.H) t.OnReleaseMsg)
+  ((s.X1 s.Y1) (s.W s.H) t.OnReleaseMsg t.OnPressMsg)
   (s.EX s.EY s.Button s.bDown)
     = /* empty */;
 }
