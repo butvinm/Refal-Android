@@ -2,7 +2,7 @@
 
 This project demonstrates how an Android application can be built using the [Refal](https://en.wikipedia.org/wiki/Refal) programming language.
 
-<img src="./assets/demo.gif" height="600">
+<img src="./assets/demo.gif" height="800">
 
 ## Project Structure
 
