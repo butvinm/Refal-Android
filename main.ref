@@ -1,28 +1,22 @@
-*$FROM LibraryEx
-$EXTERN ArgList;
+* $FROM mvu;
+$EXTERN RunApplication;
 
-*$FROM refalrawdraw
-$EXTERN CNFGSetupFullscreen, CNFGClearFrame, CNFGGetDimensions, CNFGSwapBuffers, CNFGSetBGColor, CNFGDrawText;
-
-* $EXTERN DebugLoop;
 
 $ENTRY GO {
-  =
-    <Prout 'Hello from main.ref'>
-    <Prout <ArgList>>
-    <CNFGSetupFullscreen ('Test Title') 0>
-    <Loop>
+  = <RunApplication InitModel Update View>
 }
 
 
-Loop {
-  , <CNFGGetDimensions>
-  : {
-    s.W s.H =
-      <CNFGSetBGColor '#181818ff'>
-      <CNFGClearFrame>
-      <CNFGDrawText ('Hello!') 16>
-      <CNFGSwapBuffers>
-      <Loop>
-  }
+$ENTRY InitModel {
+  = ()
+}
+
+
+$ENTRY Update {
+  t.Msg t.Model = t.Model
+}
+
+
+$ENTRY View {
+  t.Model = ()
 }

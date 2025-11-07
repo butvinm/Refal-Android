@@ -1,0 +1,62 @@
+*$FROM LibraryEx
+$EXTERN Apply;
+
+*$FROM refalrawdraw
+$EXTERN CNFGSetupFullscreen, CNFGClearFrame, CNFGGetDimensions, CNFGSwapBuffers, CNFGSetBGColor, CNFGDrawText;
+
+
+$ENTRY RunApplication {
+  t.InitModel t.Update t.View
+    , <Apply t.InitModel> : t.Model
+    = <Setup>
+      <MainLoop t.Model t.Update t.View>
+}
+
+
+Setup {
+  = <CNFGSetupFullscreen ('Test Title') 0>
+}
+
+
+MainLoop {
+  t.Model t.Update t.View
+    , <GetMsgs>
+    : {
+        /* empty */
+          , <Apply t.View t.Model> : t.DOM
+          = <Render t.DOM>
+            <MainLoop t.Model t.Update t.View>;
+
+        e.Msgs
+          , <UpdateForEachMsg t.Update t.Model e.Msgs> : t.NewModel
+          , <Apply t.View t.Model> : t.DOM
+          = <Render t.DOM>
+            <MainLoop t.NewModel t.Update t.View>;
+      }
+}
+
+
+GetMsgs {
+  = /* TODO */
+}
+
+UpdateForEachMsg {
+  t.Update t.Model /* empty */ = t.Model;
+
+  t.Update t.Model t.Msg e.Msgs
+    , <Apply t.Update t.Msg t.Model> : t.NewModel
+    = <UpdateForEachMsg t.Update t.NewModel e.Msgs>;
+}
+
+Render  {
+  t.Model
+    , <Prout 'Render: ' t.Model> :
+    , <CNFGGetDimensions>
+    : {
+        s.W s.H =
+          <CNFGSetBGColor '#181818ff'>
+          <CNFGClearFrame>
+          <CNFGDrawText ('Hello from Refal!') 16>
+          <CNFGSwapBuffers>
+      }
+}

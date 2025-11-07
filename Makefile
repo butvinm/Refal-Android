@@ -3,7 +3,7 @@ RAWDRAWANDROID=rawdrawandroid
 PACKAGENAME?=com.github.butvinm.$(APPNAME)
 ANDROIDVERSION=35
 
-SRC:=main.c refalrawdraw.c Refal-05-Standalone/lib/refal05rts.c Refal-05-Standalone/lib/Library.c Refal-05-Standalone/lib/Library.c Refal-05-Standalone/bootstrap/LibraryEx.c
+SRC:=main.c mvu.c refalrawdraw.c Refal-05-Standalone/lib/refal05rts.c Refal-05-Standalone/lib/Library.c Refal-05-Standalone/lib/Library.c Refal-05-Standalone/bootstrap/LibraryEx.c
 CFLAGS += -IRefal-05-Standalone/lib
 
 REFAL05C=Refal-05-Standalone/bin/refal05
@@ -18,7 +18,10 @@ $(REFAL05C):
 
 
 # Generate main C program from Refal program
-main.c: $(REFAL05C) main.ref
+mvu.c: $(REFAL05C) mvu.ref
+	$(REFAL05C) mvu.ref refal05rts
+
+main.c: $(REFAL05C) main.ref mvu.c
 	$(REFAL05C) main.ref refal05rts
 
 
