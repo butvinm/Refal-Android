@@ -1,5 +1,5 @@
 * $FROM mvu;
-$EXTERN RunApplication, Text;
+$EXTERN RunApplication, Text, Button;
 
 
 $ENTRY GO {
@@ -8,18 +8,28 @@ $ENTRY GO {
 
 
 $ENTRY InitModel {
-  = (0)
+  = (ButtonReleased 0)
 }
 
 
 $ENTRY Update {
-  (ButtonEvent s.X s.Y s.Button 1) (s.Count) = (<Add s.Count 1>);
-  
+  ButtonReleased (s.BtnState s.Count) = (ButtonReleased <Add s.Count 1>);
+
+  ButtonPressed (s.BtnState s.Count) = (ButtonPressed s.Count);
+
   t.Msg t.Model = t.Model;
 }
 
 
 $ENTRY View {
-  (s.Count) 
+  (s.BtnState s.Count)
     = <Text (('#ffffffff') (20 1000) 16) 'Hello from Refal!: ' <Symb s.Count>>
+      <Button (<ButtonColor s.BtnState> (340 1200) (430 150) ButtonReleased ButtonPressed)>
+      <Text (('#ffffffff') (360 1240) 16) 'Click Me'>
+}
+
+
+ButtonColor {
+  ButtonPressed = ('#484848ff');
+  ButtonReleased = ('#383838ff');
 }

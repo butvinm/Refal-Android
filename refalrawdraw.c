@@ -49,6 +49,8 @@ void HandleMotion(int x, int y, int mask) {
     printf("Motion: (x=%d, y=%d) mask=%d \n", x, y, mask);
 }
 
+#define signed_number_int(s) (int)((s).sign * (s).value)
+
 struct signed_number {
     signed sign;
     r05_number value;
@@ -157,7 +159,7 @@ R05_DEFINE_ENTRY_FUNCTION(RawDrawButtonEvents, "RawDrawButtonEvents") {
     if (!r05_empty_hole(callee, arg_end)) {
         r05_recognition_impossible();
     }
-    
+
     if (!last_button_event_processed) {
         last_button_event_processed = true;
 
@@ -288,7 +290,7 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSwapBuffers, "CNFGSwapBuffers") {
  *
  * <CNFGSetBGColor e.Color> == empty
  *
- * e.Color = #RRGGBBAA
+ * e.Color = '#RRGGBBAA'
  */
 R05_DEFINE_ENTRY_FUNCTION(CNFGSetBGColor, "CNFGSetBGColor") {
     printf("CNFGSetBGColor called from Refal\n");
@@ -298,10 +300,8 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetBGColor, "CNFGSetBGColor") {
     struct r05_node* eColor[2];
     char color[9];
     int color_len = r05_read_chars(eColor, color, sizeof(color), callee, arg_end);
-    printf("color=%.*s\n", color_len, color);
 
     if (!r05_empty_hole(eColor[1], arg_end)) {
-        printf("extra args\n");
         r05_recognition_impossible();
     }
 
@@ -313,7 +313,7 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetBGColor, "CNFGSetBGColor") {
 /**
  * <CNFGColor e.Color> == empty
  *
- * e.Color = #RRGGBBAA
+ * e.Color = '#RRGGBBAA'
  */
 R05_DEFINE_ENTRY_FUNCTION(CNFGColor, "CNFGColor") {
     printf("CNFGColor called from Refal\n");
@@ -350,7 +350,7 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetPenX, "CNFGSetPenX") {
         r05_recognition_impossible();
     }
 
-    CNFGPenX = (short)(x.sign * x.value);
+    CNFGPenX = signed_number_int(x);
 
     r05_splice_to_freelist(arg_begin, arg_end);
 }
@@ -376,6 +376,8 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetPenY, "CNFGSetPenY") {
 
 /**
  * <CNFGDrawText (e.Text) s.Scale> == empty
+ *
+ * s.Scale ::= s.NUMBER
  */
 R05_DEFINE_ENTRY_FUNCTION(CNFGDrawText, "CNFGDrawText") {
     printf("CNFGDrawText called from Refal\n");
@@ -397,6 +399,46 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGDrawText, "CNFGDrawText") {
     }
 
     CNFGDrawText(text, (short)scale.value);
+
+    r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * <CNFGTackRectangle s.X s.Y s.W s.H> == empty
+ *
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGTackRectangle, "CNFGTackRectangle") {
+    printf("CNFGTackRectangle called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+
+    struct signed_number x;
+    struct r05_node* sX = parse_signed_number(&x, callee->next)->prev;
+
+    struct signed_number y;
+    struct r05_node* sY = parse_signed_number(&y, sX->next)->prev;
+
+    struct signed_number w;
+    struct r05_node* sW = parse_signed_number(&w, sY->next)->prev;
+    if (w.sign == -1) {
+        r05_recognition_impossible();
+    }
+
+    struct signed_number h;
+    struct r05_node* sH = parse_signed_number(&h, sW->next)->prev;
+    if (h.sign == -1) {
+        r05_recognition_impossible();
+    }
+
+    if (!r05_empty_hole(sH, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    int x1 = signed_number_int(x);
+    int y1 = signed_number_int(y);
+    int x2 = x1 + signed_number_int(w);
+    int y2 = y1 + signed_number_int(h);
+    CNFGTackRectangle(x1, y1, x2, y2);
 
     r05_splice_to_freelist(arg_begin, arg_end);
 }
