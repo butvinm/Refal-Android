@@ -1,9 +1,9 @@
 * $FROM mvu;
-$EXTERN RunApplication;
+$EXTERN RunApplication, Text;
 
 
 $ENTRY GO {
-  = <RunApplication InitModel Update View>
+  = <RunApplication ('Refal Android') ('#181818ff') InitModel Update View>
 }
 
 
@@ -19,5 +19,5 @@ $ENTRY Update {
 
 $ENTRY View {
   t.Model 
-    = (Text ('#ffffffff') (20 20) 16 'Hello from Refal!')
+    = <Text (('#ffffffff') (20 20) 16) 'Hello from Refal!'>
 }

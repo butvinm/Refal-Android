@@ -8,21 +8,24 @@ $EXTERN
   CNFGGetDimensions,
   CNFGSwapBuffers,
   CNFGDrawText,
+  CNFGSetBGColor,
   CNFGColor,
   CNFGSetPenX,
   CNFGSetPenY;
 
 
 $ENTRY RunApplication {
-  t.InitModel t.Update t.View
+  (e.Title) (e.BgColor) t.InitModel t.Update t.View
     , <Apply t.InitModel> : t.Model
-    = <Setup>
+    = <Setup (e.Title) (e.BgColor)>
       <MainLoop t.Model t.Update t.View>
 }
 
 
 Setup {
-  = <CNFGSetupFullscreen ('Test Title') 0>
+  (e.Title) (e.BgColor)
+    = <CNFGSetupFullscreen (e.Title) 0>
+      <CNFGSetBGColor e.BgColor>
 }
 
 
@@ -48,6 +51,7 @@ GetMsgs {
   = /* TODO */
 }
 
+
 UpdateForEachMsg {
   t.Update t.Model /* empty */ = t.Model;
 
@@ -55,6 +59,7 @@ UpdateForEachMsg {
     , <Apply t.Update t.Msg t.Model> : t.NewModel
     = <UpdateForEachMsg t.Update t.NewModel e.Msgs>;
 }
+
 
 Render  {
   e.DOM
@@ -65,16 +70,25 @@ Render  {
       <CNFGSwapBuffers>
 }
 
+
 Render-Elements {
   /* empty */ = /* empty */;
 
   t.Element e.Elements = <Render-Element t.Element> <Render-Elements e.Elements>;
 }
 
+
 Render-Element {
-  (Text (e.Color) (s.X s.Y) s.Scale e.Text)
+  (Text ((e.Color) (s.X s.Y) s.Scale) e.Text)
     = <CNFGColor e.Color>
       <CNFGSetPenX s.X>
       <CNFGSetPenY s.Y>
       <CNFGDrawText (e.Text) s.Scale>;
+}
+
+
+/* UI Kit */
+
+$ENTRY Text {
+  ((e.Color) (s.X s.Y) s.Scale) e.Text = (Text ((e.Color) (s.X s.Y) s.Scale) e.Text);
 }
