@@ -23,8 +23,3 @@ mvu.c: $(REFAL05C) mvu.ref
 
 main.c: $(REFAL05C) main.ref mvu.c
 	$(REFAL05C) main.ref refal05rts
-
-
-.PHONY: push-run-from-refal
-push-run-from-refal: main.c
-	$(MAKE) push run
