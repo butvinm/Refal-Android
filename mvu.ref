@@ -55,7 +55,7 @@ MainLoop {
 
               e.Msgs
                 , <UpdateForEachMsg t.Update t.Model e.Msgs> : t.NewModel
-                , <Apply t.View t.Model> : e.DOM
+                , <Apply t.View t.NewModel> : e.DOM
                 , <Render <ResetContext t.Ctx> e.DOM> : t.NewCtx
                 = <MainLoop t.NewCtx t.NewModel t.Update t.View>;
             }
