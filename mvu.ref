@@ -4,6 +4,7 @@ $EXTERN Apply;
 *$FROM refalrawdraw
 $EXTERN
   CNFGSetupFullscreen,
+  CNFGHandleInput,
   CNFGClearFrame,
   CNFGGetDimensions,
   CNFGSwapBuffers,
@@ -11,7 +12,8 @@ $EXTERN
   CNFGSetBGColor,
   CNFGColor,
   CNFGSetPenX,
-  CNFGSetPenY;
+  CNFGSetPenY,
+  RawDrawButtonEvents;
 
 
 $ENTRY RunApplication {
@@ -31,26 +33,37 @@ Setup {
 
 MainLoop {
   t.Model t.Update t.View
-    , <GetMsgs>
+    , <CNFGHandleInput>
     : {
-        /* empty */
-          , <Apply t.View t.Model> : t.DOM
-          = <Render t.DOM>
-            <MainLoop t.Model t.Update t.View>;
-
-        e.Msgs
-          , <UpdateForEachMsg t.Update t.Model e.Msgs> : t.NewModel
-          , <Apply t.View t.Model> : e.DOM
-          = <Render e.DOM>
-            <MainLoop t.NewModel t.Update t.View>;
+        0 = /* exit */;
+        
+        1
+          , <GetMsgs>
+          : {
+              /* empty */
+                , <Apply t.View t.Model> : t.DOM
+                = <Render t.DOM>
+                  <MainLoop t.Model t.Update t.View>;
+      
+              e.Msgs
+                , <UpdateForEachMsg t.Update t.Model e.Msgs> : t.NewModel
+                , <Apply t.View t.Model> : e.DOM
+                = <Render e.DOM>
+                  <MainLoop t.NewModel t.Update t.View>;
+            }
       }
 }
 
 
 GetMsgs {
-  = /* TODO */
+  = <ButtonEventsToMsgs <RawDrawButtonEvents>>
 }
 
+ButtonEventsToMsgs {
+  /* empty */ = /* empty */;
+  
+  (s.X s.Y s.Button s.bDown) e.Events = (ButtonEvent s.X s.Y s.Button s.bDown) <ButtonEventsToMsgs e.Events>;
+}
 
 UpdateForEachMsg {
   t.Update t.Model /* empty */ = t.Model;

@@ -8,16 +8,18 @@ $ENTRY GO {
 
 
 $ENTRY InitModel {
-  = ()
+  = (0)
 }
 
 
 $ENTRY Update {
-  t.Msg t.Model = t.Model
+  (ButtonEvent s.X s.Y s.Button 1) (s.Count) = (<Add s.Count 1>);
+  
+  t.Msg t.Model = t.Model;
 }
 
 
 $ENTRY View {
-  t.Model 
-    = <Text (('#ffffffff') (20 20) 16) 'Hello from Refal!'>
+  (s.Count) 
+    = <Text (('#ffffffff') (20 1000) 16) 'Hello from Refal!: ' <Symb s.Count>>
 }

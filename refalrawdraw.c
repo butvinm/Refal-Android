@@ -1,4 +1,5 @@
 #include <android_native_app_glue.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -9,6 +10,16 @@
 #include "refal05rts.h"
 
 volatile int suspended;
+
+typedef struct {
+    int x;
+    int y;
+    int button;
+    int bDown;
+} ButtonEvent;
+
+ButtonEvent last_button_event = {};
+bool last_button_event_processed = true;
 
 int HandleDestroy() {
     printf("Destroying\n");
@@ -29,6 +40,9 @@ void HandleKey(int keycode, int bDown) {
 
 void HandleButton(int x, int y, int button, int bDown) {
     printf("Button: (x=%d, y=%d) button=%d bDown=%d \n", x, y, button, bDown);
+
+    last_button_event_processed = false;
+    last_button_event = (ButtonEvent) { .x = x, .y = y, .button = button, .bDown = bDown };
 }
 
 void HandleMotion(int x, int y, int mask) {
@@ -130,6 +144,40 @@ static int parse_hex_color(const char* color, int color_len) {
 }
 
 /**
+ * Get list of button events.
+ *
+ * <RawDrawButtonEvents> == t.ButtonEvent*
+ *
+ * t.ButtonEvent = (s.X s.Y s.Button s.bDown)
+ */
+R05_DEFINE_ENTRY_FUNCTION(RawDrawButtonEvents, "RawDrawButtonEvents") {
+    printf("RawDrawButtonEvents called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+    if (!r05_empty_hole(callee, arg_end)) {
+        r05_recognition_impossible();
+    }
+    
+    if (!last_button_event_processed) {
+        last_button_event_processed = true;
+
+        struct r05_node *left_bracket, *right_bracket;
+        r05_reset_allocator();
+        r05_alloc_open_bracket(&left_bracket);
+        r05_alloc_number((r05_number)last_button_event.x);
+        r05_alloc_number((r05_number)last_button_event.y);
+        r05_alloc_number((r05_number)last_button_event.button);
+        r05_alloc_number((r05_number)last_button_event.bDown);
+        r05_alloc_close_bracket(&right_bracket);
+        r05_link_brackets(left_bracket, right_bracket);
+        r05_splice_from_freelist(arg_begin);
+        r05_splice_to_freelist(arg_begin, arg_end);
+    } else {
+        r05_splice_to_freelist(arg_begin, arg_end);
+    }
+}
+
+/**
  * <CNFGSetupFullscreen (e.WindowName) s.ScreenNumber> == empty
  *
  * e.WindowName = s.CHAR+
@@ -156,6 +204,27 @@ R05_DEFINE_ENTRY_FUNCTION(CNFGSetupFullscreen, "CNFGSetupFullscreen") {
     CNFGSetupFullscreen(window_name, (int)screen_number.value);
 
     r05_splice_to_freelist(arg_begin, arg_end);
+}
+
+/**
+ * <CNFGHandleInput> == s.ShouldExit
+ *
+ * s.ShouldExit ::= 0 | 1
+ */
+R05_DEFINE_ENTRY_FUNCTION(CNFGHandleInput, "CNFGHandleInput") {
+    printf("CNFGHandleInput called from Refal\n");
+
+    struct r05_node* callee = arg_begin->next;
+    if (!r05_empty_hole(callee, arg_end)) {
+        r05_recognition_impossible();
+    }
+
+    int should_exit = CNFGHandleInput();
+
+    struct r05_node* sShouldExit = arg_begin;
+    sShouldExit->tag = R05_DATATAG_NUMBER;
+    sShouldExit->info.number = (r05_number)should_exit;
+    r05_splice_to_freelist(sShouldExit->next, arg_end);
 }
 
 /**
